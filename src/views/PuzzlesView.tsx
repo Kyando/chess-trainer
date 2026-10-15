@@ -13,6 +13,7 @@ import { REVIEW_NODES, winAfterMove } from '../review/runner'
 import { useQuiz, type QuizOutcome } from '../review/useQuiz'
 import { Board, type Arrow } from '../ui/Board'
 import { useWakeLock } from '../ui/useWakeLock'
+import { TacticsCard, TacticsSession, type TacticsChoice } from './TacticsTrainer'
 
 /** Puzzles per training session. */
 const SESSION = 15
@@ -44,6 +45,7 @@ export function PuzzlesView({ active, paused, onOpenGame }: Props) {
   const [scan, setScan] = useState<ScanProgress | null>(null)
   const [scanResult, setScanResult] = useState<string | null>(null)
   const [now, setNow] = useState(() => Date.now())
+  const [tactics, setTactics] = useState<TacticsChoice | null>(null)
   const engineRef = useRef<StockfishEngine | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const pausedRef = useRef(paused)
@@ -139,6 +141,8 @@ export function PuzzlesView({ active, paused, onOpenGame }: Props) {
       themes: [...themes].sort((a, b) => b[1] - a[1]),
     }
   }, [puzzles, now])
+
+  if (tactics) return <TacticsSession choice={tactics} onExit={() => setTactics(null)} />
 
   if (drill) {
     const color = item?.color ?? drill.items[0].color
@@ -264,6 +268,8 @@ export function PuzzlesView({ active, paused, onOpenGame }: Props) {
           </div>
         </section>
       )}
+
+      <TacticsCard ownThemes={stats.themes} onStart={setTactics} />
 
       <section className="review-panel">
         <div className="review-title">Find puzzles</div>

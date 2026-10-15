@@ -12,7 +12,7 @@ const VIEWS: { id: View; label: string; icon: string }[] = [
   { id: 'play', label: 'Play', icon: '♟' },
   { id: 'games', label: 'Games', icon: '☰' },
   { id: 'analysis', label: 'Analysis', icon: '🔍' },
-  { id: 'puzzles', label: 'Puzzles', icon: '🧩' },
+  { id: 'puzzles', label: 'Train', icon: '🎯' },
 ]
 
 /** App shell: all views stay mounted so a running game survives switching tabs. */

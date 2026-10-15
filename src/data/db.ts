@@ -1,5 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { Puzzle } from '../puzzles/extract'
+import { detectMotifs } from '../puzzles/motifs'
+import type { SrsState } from '../puzzles/srs'
 import type { PositionEval } from '../review/review'
 
 export type GameSource = 'chesscom' | 'bot'
@@ -77,6 +79,34 @@ export interface ScanState {
   error?: string
 }
 
+/** My progress on one lichess puzzle (the puzzle itself ships in public/puzzles). */
+export interface TacticProgress extends SrsState {
+  id: string
+  rating: number
+  themes: string[]
+  attempts: number
+  failures: number
+}
+
+/** Engine verdict on one of my opening positions (my move to play), with its drill schedule. */
+export interface OpeningPosition extends SrsState {
+  /** "<color>|<position key>". */
+  key: string
+  color: 'w' | 'b'
+  fen: string
+  /** Moves leading here from the start (SAN), to show the line. */
+  line: string[]
+  /** Times I reached it in my games. */
+  count: number
+  bestUci: string
+  bestSan: string
+  /** My winning chances with the best move. */
+  bestWin: number
+  /** My moves here: how often, my score with them, and their winning chances. */
+  moves: { uci: string; san: string; count: number; score: number; win: number }[]
+  analyzedAt: number
+}
+
 export class ChessDb extends Dexie {
   games!: EntityTable<GameRecord, 'id'>
   pgns!: EntityTable<GamePgn, 'id'>
@@ -84,6 +114,8 @@ export class ChessDb extends Dexie {
   reviews!: EntityTable<StoredReview, 'key'>
   puzzles!: EntityTable<Puzzle, 'id'>
   scans!: EntityTable<ScanState, 'gameId'>
+  tactics!: EntityTable<TacticProgress, 'id'>
+  openings!: EntityTable<OpeningPosition, 'key'>
 
   constructor(name = 'chess-trainer') {
     super(name)
@@ -94,6 +126,19 @@ export class ChessDb extends Dexie {
     })
     this.version(2).stores({ reviews: 'key' })
     this.version(3).stores({ puzzles: 'id, gameId, due', scans: 'gameId' })
+    this.version(4)
+      .stores({ tactics: 'id, due', openings: 'key, color, due' })
+      .upgrade((tx) =>
+        // Tag puzzles found before tactic detection existed.
+        tx
+          .table<Puzzle>('puzzles')
+          .toCollection()
+          .modify((p) => {
+            const motifs = detectMotifs(p.fen, p.pv, p.color).filter((m) => !p.themes.includes(m))
+            if (!motifs.length) return
+            p.themes = [...p.themes.filter((t) => t !== 'positional'), ...motifs]
+          }),
+      )
   }
 }
 

@@ -2,9 +2,17 @@ import { materialBalance as balance } from '../core/material'
 import type { Color } from '../core/types'
 import type { TimeClass } from '../data/db'
 import { ERRORS, type GameReview, type MoveClass, type PositionEval } from '../review/review'
+import { detectMotifs, type Motif } from './motifs'
 import { newSrs, type SrsState } from './srs'
 
-export type Theme = 'missed-mate' | 'allowed-mate' | 'hanging-piece' | 'missed-material' | 'missed-punish' | 'positional'
+export type Theme =
+  | 'missed-mate'
+  | 'allowed-mate'
+  | 'hanging-piece'
+  | 'missed-material'
+  | 'missed-punish'
+  | Motif
+  | 'positional'
 
 export const THEME_LABELS: Record<Theme, string> = {
   'missed-mate': 'Missed mate',
@@ -12,6 +20,11 @@ export const THEME_LABELS: Record<Theme, string> = {
   'hanging-piece': 'Hung material',
   'missed-material': 'Missed material win',
   'missed-punish': "Didn't punish a blunder",
+  fork: 'Fork',
+  pin: 'Pin',
+  skewer: 'Skewer',
+  'discovered-attack': 'Discovered attack',
+  'back-rank': 'Back-rank mate',
   positional: 'Deeper / positional',
 }
 
@@ -110,5 +123,6 @@ function themesOf(
   // Material two plies on: my move and the opponent's best reply, vs. the best line.
   if (start - balance(fen, [played, ...(after?.pv?.slice(0, 1) ?? [])], color) >= 2) themes.push('hanging-piece')
   if (balance(fen, pv.slice(0, 3), color) - start >= 2) themes.push('missed-material')
+  themes.push(...detectMotifs(fen, pv, color))
   return themes.length ? themes : ['positional']
 }

@@ -36,6 +36,10 @@ running fully in the browser. See [PLAN.md](PLAN.md) for the roadmap (v1 → v2 
   one of its pieces, or tap "No threat" — before you may move. Stockfish checks what the
   bot could do if you passed (null move) and grades you: spotted / missed (red arrow) /
   false alarm; running score per game. Skipped after captures and checks
+- **Insights** (Games tab → 📊 Insights, follows the filters): score by color, results per
+  opening family as White and Black (weak/strong ones highlighted), and where your errors
+  happen — mistakes/blunders per 100 moves by game phase and by time left on your clock,
+  from the engine reviews made by the puzzle scanner
 - Installable PWA (offline), screen kept awake during games
 
 ## Live
@@ -63,6 +67,7 @@ src/core/     logic independent of UI: GameSession (rules, clock, result, events
 src/engine/   Stockfish worker wrapper (UCI search + streaming analysis), eval helpers, bot levels,
               threat detection for blunder check
 src/play/     blunder-check hook (threat question state + score)
+src/insights/ insights aggregation (openings, errors by phase / clock) and review loader
 src/puzzles/  puzzle extraction from reviews, game scanner, spaced-repetition scheduler
 src/review/   Game Review: move classification + accuracy (pure), engine runner, review and
               retry hooks

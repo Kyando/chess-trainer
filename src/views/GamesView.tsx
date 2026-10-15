@@ -4,6 +4,7 @@ import type { Color } from '../core/types'
 import { db, type GameRecord } from '../data/db'
 import { DEFAULT_FILTERS, filterGames, formatTimeControl, gameStats, opponentOf, userOf, type GameFilters } from '../data/filters'
 import { syncChessCom, type SyncProgress } from '../import/chesscom'
+import { InsightsPanel } from '../ui/InsightsPanel'
 
 const USER_KEY = 'chess-trainer.chesscom-user'
 const PAGE = 60
@@ -30,6 +31,7 @@ export function GamesView({ active, onOpen }: Props) {
   const [shown, setShown] = useState(PAGE)
   const [progress, setProgress] = useState<SyncProgress | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [mode, setMode] = useState<'list' | 'insights'>('list')
   const abortRef = useRef<AbortController | null>(null)
 
   const reload = useCallback(() => db.games.orderBy('endTime').reverse().toArray().then(setGames), [])
@@ -98,48 +100,63 @@ export function GamesView({ active, onOpen }: Props) {
 
   return (
     <main className="games-view">
-      <section className="games-sync">
-        <form
-          className="sync-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            void sync()
-          }}
-        >
-          <input
-            className="text-input"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="chess.com username"
-            aria-label="chess.com username"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            disabled={!!progress}
-          />
-          {progress ? (
-            <button type="button" className="btn secondary" onClick={() => abortRef.current?.abort()}>
-              Stop
-            </button>
-          ) : (
-            <button type="submit" className="btn primary sync-btn" disabled={!username.trim()}>
-              ⟳ Sync
-            </button>
-          )}
-        </form>
-        {progress && (
-          <div className="sync-progress">
-            <div className="progress-track">
-              <div className="progress-fill" style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }} />
+      <div className="segmented" role="tablist">
+        {(
+          [
+            ['list', '☰ Games'],
+            ['insights', '📊 Insights'],
+          ] as const
+        ).map(([m, label]) => (
+          <button key={m} role="tab" aria-selected={mode === m} className={mode === m ? 'selected' : ''} onClick={() => setMode(m)}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'list' && (
+        <section className="games-sync">
+          <form
+            className="sync-form"
+            onSubmit={(e) => {
+              e.preventDefault()
+              void sync()
+            }}
+          >
+            <input
+              className="text-input"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="chess.com username"
+              aria-label="chess.com username"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              disabled={!!progress}
+            />
+            {progress ? (
+              <button type="button" className="btn secondary" onClick={() => abortRef.current?.abort()}>
+                Stop
+              </button>
+            ) : (
+              <button type="submit" className="btn primary sync-btn" disabled={!username.trim()}>
+                ⟳ Sync
+              </button>
+            )}
+          </form>
+          {progress && (
+            <div className="sync-progress">
+              <div className="progress-track">
+                <div className="progress-fill" style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }} />
+              </div>
+              <span className="muted">
+                {progress.month ? `Fetching ${progress.month}` : 'Starting'} · {progress.done}/{progress.total} months ·{' '}
+                {progress.imported} games
+              </span>
             </div>
-            <span className="muted">
-              {progress.month ? `Fetching ${progress.month}` : 'Starting'} · {progress.done}/{progress.total} months ·{' '}
-              {progress.imported} games
-            </span>
-          </div>
-        )}
-        {error && <p className="error">{error}</p>}
-      </section>
+          )}
+          {error && <p className="error">{error}</p>}
+        </section>
+      )}
 
       <section className="games-filters">
         {chips('timeClass', [
@@ -189,7 +206,9 @@ export function GamesView({ active, onOpen }: Props) {
         </div>
       )}
 
-      {games === null ? null : games.length === 0 ? (
+      {mode === 'insights' ? (
+        games && <InsightsPanel games={filtered} />
+      ) : games === null ? null : games.length === 0 ? (
         <p className="empty-state">
           No games yet. Enter your chess.com username and press <strong>Sync</strong> to import your history — or play
           the bot; finished games are saved here too.
@@ -227,7 +246,7 @@ export function GamesView({ active, onOpen }: Props) {
           })}
         </ul>
       )}
-      {filtered.length > shown && (
+      {mode === 'list' && filtered.length > shown && (
         <button className="btn secondary show-more" onClick={() => setShown((n) => n + PAGE)}>
           Show more ({filtered.length - shown} left)
         </button>

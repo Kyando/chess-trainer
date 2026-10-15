@@ -15,6 +15,11 @@ running fully in the browser. See [PLAN.md](PLAN.md) for the roadmap (v1 → v2 
   promotion picker, captured pieces and material balance, synthesized sounds
 - Installable PWA (offline), screen kept awake during games
 
+## Live
+
+https://kyando.github.io/chess-trainer/ — deployed by GitHub Actions on every push to `main`.
+On a phone, open it and use "Add to Home Screen" to install it as an app (works offline).
+
 ## Run
 
 ```bash

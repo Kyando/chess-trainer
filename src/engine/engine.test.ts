@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { formatEval, pvToSan, toWhiteEval, winPercent } from './eval'
 import { BOT_LEVELS, botLevel, pickMove } from './bot'
 import { parseInfo, scoreValue, uciToIntent, type EngineLine } from './uci'
 
@@ -58,4 +59,32 @@ describe('pickMove', () => {
 it('converts UCI to move intents', () => {
   expect(uciToIntent('e7e8q')).toEqual({ from: 'e7', to: 'e8', promotion: 'q' })
   expect(uciToIntent('g1f3').promotion).toBeUndefined()
+})
+
+describe('eval helpers', () => {
+  it('converts to White POV', () => {
+    expect(toWhiteEval({ cp: 50 }, 'b')).toEqual({ cp: -50 })
+    expect(toWhiteEval({ mate: 2 }, 'b')).toEqual({ mate: -2 })
+  })
+
+  it('maps evals to win percent', () => {
+    expect(winPercent({ cp: 0 })).toBe(50)
+    expect(winPercent({ cp: 300 })).toBeGreaterThan(70)
+    expect(winPercent({ cp: -300 })).toBeLessThan(30)
+    expect(winPercent({ mate: -1 })).toBe(0)
+  })
+
+  it('formats like chess.com', () => {
+    expect(formatEval({ cp: 125 })).toBe('+1.25')
+    expect(formatEval({ cp: -40 })).toBe('-0.40')
+    expect(formatEval({ mate: -2 })).toBe('-M2')
+  })
+
+  it('converts a PV to SAN with ply numbers', () => {
+    const fen = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'
+    expect(pvToSan(fen, ['e7e5', 'g1f3', 'zzzz'])).toEqual([
+      { san: 'e5', uci: 'e7e5', ply: 2 },
+      { san: 'Nf3', uci: 'g1f3', ply: 3 },
+    ])
+  })
 })

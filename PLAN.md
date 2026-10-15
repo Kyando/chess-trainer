@@ -43,8 +43,8 @@ Concept tags shared by mistakes, puzzles and lessons: fork, pin, hanging-piece, 
 ### v1.0 — Local chess.com
 - [x] **Phase 1 — Play:** themed board, legal moves, premoves, arrows, sounds, clocks
       (5+0, 3+2, 10+0…), move list + navigation, flip, resign, takeback, bot levels
-- [x] **Phase 1b — PWA:** installable, offline, wake lock (PNG icons still to do for iOS)
-- [ ] **Phase 2 — Analysis board:** eval bar, MultiPV lines, move tree with variations,
+- [x] **Phase 1b — PWA:** installable, offline, wake lock incl. iOS home-screen icon
+- [x] **Phase 2 — Analysis board:** eval bar, MultiPV lines, move tree with variations,
       PGN/FEN import/export, opening names (lichess-org/chess-openings, CC0)
 - [ ] **Phase 3 — chess.com import:** `api.chess.com/pub/player/{user}/games/archives`
       → monthly PGN (incl. `%clk` clock times) → IndexedDB; filterable games list

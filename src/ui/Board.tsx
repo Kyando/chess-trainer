@@ -7,15 +7,23 @@ import 'chessground/assets/chessground.base.css'
 import 'chessground/assets/chessground.cburnett.css'
 import './board-theme.css'
 
+export interface Arrow {
+  from: string
+  to: string
+  brush: 'green' | 'red' | 'blue' | 'yellow' | 'paleBlue' | 'paleGreen' | 'paleRed' | 'paleGrey'
+}
+
 export interface BoardProps {
   fen: string
   orientation: 'white' | 'black'
   turnColor: 'white' | 'black'
-  /** Which side the user may move (and premove); undefined = view only. */
-  movableColor?: 'white' | 'black'
+  /** Which side the user may move (and premove); 'both' for analysis; undefined = view only. */
+  movableColor?: 'white' | 'black' | 'both'
   dests: Map<string, string[]>
   lastMove?: [string, string]
   check: boolean
+  /** Arrows drawn by the app (e.g. the engine's best move), separate from the user's own. */
+  arrows?: Arrow[]
   /** Bump to force the board back in sync (e.g. after a cancelled promotion). */
   syncKey?: number
   /** `premove` is true when a queued premove was just played. */
@@ -75,6 +83,12 @@ export function Board(props: BoardProps) {
     // A premove queued during the opponent's turn fires as soon as it is ours.
     else if (props.turnColor === props.movableColor) cg.playPremove()
   }, [props.fen, props.orientation, props.turnColor, props.movableColor, props.dests, lastMoveKey, props.check, props.syncKey])
+
+  const arrowsKey = JSON.stringify(props.arrows ?? [])
+  useEffect(() => {
+    const arrows: Arrow[] = JSON.parse(arrowsKey)
+    api.current?.setAutoShapes(arrows.map((a) => ({ orig: a.from as Key, dest: a.to as Key, brush: a.brush })))
+  }, [arrowsKey])
 
   return <div ref={el} className="cg-wrap board" />
 }

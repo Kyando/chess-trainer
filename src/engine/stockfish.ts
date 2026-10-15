@@ -99,6 +99,42 @@ export class StockfishEngine {
     })
   }
 
+  /**
+   * Continuous analysis for the analysis board: streams the current lines to
+   * `onUpdate` until `depth` is reached or the returned function is called.
+   */
+  analyze(fen: string, opts: { depth: number; multipv: number }, onUpdate: (lines: EngineLine[]) => void): () => void {
+    let cancelled = false
+    let running = false
+    void this.enqueue(async () => {
+      if (cancelled) return
+      running = true
+      if (opts.multipv !== this.currentMultipv) {
+        this.send(`setoption name MultiPV value ${opts.multipv}`)
+        this.currentMultipv = opts.multipv
+      }
+      const lines = new Map<number, EngineLine>()
+      const done = this.waitFor(
+        (l) => l.startsWith('bestmove'),
+        (l) => {
+          const info = parseInfo(l)
+          if (!info || cancelled) return
+          lines.set(info.multipv, info)
+          onUpdate([...lines.values()].sort((a, b) => a.multipv - b.multipv))
+        },
+      )
+      this.send(`position fen ${fen}`)
+      this.send(`go depth ${opts.depth}`)
+      await done
+      running = false
+    })
+    return () => {
+      if (cancelled) return
+      cancelled = true
+      if (running) this.stop()
+    }
+  }
+
   /** Aborts the running search; its promise still resolves with what was found. */
   stop() {
     this.send('stop')

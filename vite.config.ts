@@ -11,7 +11,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Chess Trainer',
         short_name: 'Chess',
@@ -20,10 +20,14 @@ export default defineConfig({
         background_color: '#312e2b',
         display: 'standalone',
         orientation: 'portrait',
-        icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        icons: [
+          { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,wasm}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,wasm,json}'],
         // The Stockfish WASM file is ~1.8 MB; allow it into the offline cache.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },

@@ -5,7 +5,7 @@ import { BOT_LEVELS } from '../engine/bot'
 interface Props {
   initial: GameSettings
   onStart: (settings: GameSettings) => void
-  onCancel?: () => void
+  onCancel: () => void
 }
 
 export function NewGameDialog({ initial, onStart, onCancel }: Props) {
@@ -74,11 +74,9 @@ export function NewGameDialog({ initial, onStart, onCancel }: Props) {
         </section>
 
         <div className="dialog-actions">
-          {onCancel && (
-            <button className="btn secondary" onClick={onCancel}>
-              Cancel
-            </button>
-          )}
+          <button className="btn secondary" onClick={onCancel}>
+            Cancel
+          </button>
           <button className="btn primary" onClick={() => onStart(settings)}>
             Play
           </button>

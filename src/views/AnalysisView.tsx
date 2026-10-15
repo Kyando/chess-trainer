@@ -7,9 +7,9 @@ import type { Color, PromotionPiece } from '../core/types'
 import { toWhiteEval, type WhiteEval } from '../engine/eval'
 import { StockfishEngine } from '../engine/stockfish'
 import { uciToIntent, type EngineLine } from '../engine/uci'
-import { CLASS_INFO, type MoveClass } from '../review/review'
+import { CLASS_INFO, ERRORS, type MoveClass, type ReviewedMove } from '../review/review'
 import { useGameReview } from '../review/useGameReview'
-import { useRetry } from '../review/useRetry'
+import { useQuiz, type QuizItem } from '../review/useQuiz'
 import { Board, type Arrow, type Badge } from '../ui/Board'
 import { EngineLines } from '../ui/EngineLines'
 import { EvalBar } from '../ui/EvalBar'
@@ -29,6 +29,8 @@ interface Props {
   initialTree: MoveTree | null
   /** Starting orientation for loaded games. */
   initialOrientation?: Color
+  /** Main-line position to show first (0 = start). */
+  initialPosition?: number
   /** Only analyse while the view is visible. */
   active: boolean
 }
@@ -41,7 +43,7 @@ function readEngineSetting(): boolean {
   }
 }
 
-export function AnalysisView({ initialTree, initialOrientation = 'w', active }: Props) {
+export function AnalysisView({ initialTree, initialOrientation = 'w', initialPosition = 0, active }: Props) {
   const [tree, setTree] = useState(() => initialTree ?? new MoveTree())
   const [currentId, setCurrentId] = useState(() => tree.continuation(tree.rootId).at(-1)?.id ?? tree.rootId)
   const [orientation, setOrientation] = useState<Color>(initialOrientation)
@@ -61,7 +63,7 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
   if (initialTree && initialTree !== loadedFrom) {
     setLoadedFrom(initialTree)
     setTree(initialTree)
-    setCurrentId(initialTree.rootId)
+    setCurrentId(initialPosition > 0 ? (initialTree.mainline()[initialPosition - 1]?.id ?? initialTree.rootId) : initialTree.rootId)
     setOrientation(initialOrientation)
   }
 
@@ -71,7 +73,7 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
 
   const gameReview = useGameReview(tree, version)
   const { review, nodeIds } = gameReview
-  const retry = useRetry(review, gameReview.fens, gameReview.judgeMove)
+  const retry = useQuiz<ReviewedMove & QuizItem>(gameReview.judgeMove)
   const drill = retry.drill
 
   const node = tree.get(currentId)
@@ -249,7 +251,7 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
             item={retry.item}
             at={drill.at}
             total={drill.items.length}
-            clean={drill.clean}
+            clean={drill.outcomes.filter((o) => o === 'clean').length}
             hint={drill.hint}
             onHint={retry.showHint}
             onSolution={retry.showSolution}
@@ -280,7 +282,13 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
           onCancel={gameReview.cancel}
           onSelect={(i) => setCurrentId(positionId(i))}
           onPlayLine={(i, ucis) => playLine(ucis, positionId(i), true)}
-          onRetry={() => retry.begin(orientation)}
+          onRetry={() =>
+            retry.begin(
+              (review?.moves ?? [])
+                .filter((m) => m.color === orientation && ERRORS.has(m.cls))
+                .map((m) => ({ ...m, fen: gameReview.fens[m.index], playedUci: m.uci })),
+            )
+          }
         />
         {(h.White || h.Black) && (
           <div className="game-header">

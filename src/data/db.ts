@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+import type { Puzzle } from '../puzzles/extract'
 import type { PositionEval } from '../review/review'
 
 export type GameSource = 'chesscom' | 'bot'
@@ -67,11 +68,22 @@ export interface StoredReview {
   createdAt: number
 }
 
+/** Which games were already searched for puzzles. */
+export interface ScanState {
+  gameId: string
+  scannedAt: number
+  puzzles: number
+  /** Set when the game could not be analysed (e.g. a broken PGN). */
+  error?: string
+}
+
 export class ChessDb extends Dexie {
   games!: EntityTable<GameRecord, 'id'>
   pgns!: EntityTable<GamePgn, 'id'>
   archives!: EntityTable<ArchiveState, 'key'>
   reviews!: EntityTable<StoredReview, 'key'>
+  puzzles!: EntityTable<Puzzle, 'id'>
+  scans!: EntityTable<ScanState, 'gameId'>
 
   constructor(name = 'chess-trainer') {
     super(name)
@@ -81,6 +93,7 @@ export class ChessDb extends Dexie {
       archives: 'key, username',
     })
     this.version(2).stores({ reviews: 'key' })
+    this.version(3).stores({ puzzles: 'id, gameId, due', scans: 'gameId' })
   }
 }
 

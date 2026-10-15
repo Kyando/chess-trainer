@@ -1,8 +1,8 @@
 import { CLASS_INFO, type ReviewedMove } from '../review/review'
-import type { RetryStatus } from '../review/useRetry'
+import type { QuizStatus } from '../review/useQuiz'
 
 interface Props {
-  status: RetryStatus
+  status: QuizStatus
   message: string
   item?: ReviewedMove
   at: number

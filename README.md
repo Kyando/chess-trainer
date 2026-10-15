@@ -3,7 +3,7 @@
 A personal, chess.com-style chess app for playing, analysing and learning — mobile-first,
 running fully in the browser. See [PLAN.md](PLAN.md) for the roadmap (v1 → v2 voice + AI coach).
 
-## Features so far (v1.0, phases 1–4)
+## Features so far (v1.0 + puzzles from v1.1)
 
 - Green/cream board (chessground) with drag or click-to-move, legal-move dots,
   **premoves**, right-click arrows/highlights, last-move and check highlights
@@ -26,6 +26,12 @@ running fully in the browser. See [PLAN.md](PLAN.md) for the roadmap (v1 → v2 
   accuracy per player (lichess formula); clickable eval graph; "best was …" with the line;
   jump between errors; **Retry mistakes** drills each of your errors, checking your
   answer with the engine
+- **Puzzles from your games**: scans your imported games newest first (~5 s per game on a
+  laptop) and turns every mistake/miss/blunder you made while still in the game into a
+  "find the better move" puzzle, tagged (hung material, missed material win, didn't
+  punish a blunder, missed/allowed mate, positional); spaced repetition (SM-2 style:
+  1 → 3 → 8… days, missed ones back in 10 min); practice by theme; open the source game
+  at that move
 - Installable PWA (offline), screen kept awake during games
 
 ## Live
@@ -51,6 +57,7 @@ is on the same Wi-Fi.
 src/core/     logic independent of UI: GameSession (rules, clock, result, events), ChessClock,
               MoveTree (variations + PGN), openings lookup, material, settings
 src/engine/   Stockfish worker wrapper (UCI search + streaming analysis), eval helpers, bot levels
+src/puzzles/  puzzle extraction from reviews, game scanner, spaced-repetition scheduler
 src/review/   Game Review: move classification + accuracy (pure), engine runner, review and
               retry hooks
 src/views/    PlayView (game vs bot), GamesView, AnalysisView

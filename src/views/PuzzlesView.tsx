@@ -13,6 +13,7 @@ import { REVIEW_NODES, winAfterMove } from '../review/runner'
 import { useQuiz, type QuizOutcome } from '../review/useQuiz'
 import { Board, type Arrow } from '../ui/Board'
 import { useWakeLock } from '../ui/useWakeLock'
+import { EndgamesCard, EndgameTrainer } from './EndgameTrainer'
 import { OpeningsCard, OpeningTrainer } from './OpeningTrainer'
 import { TacticsCard, TacticsSession, type TacticsChoice } from './TacticsTrainer'
 
@@ -144,6 +145,7 @@ export function PuzzlesView({ active, paused, onOpenGame }: Props) {
     }
   }, [puzzles, now])
 
+  if (screen === 'endgames') return <EndgameTrainer onExit={() => setScreen('home')} />
   if (screen === 'openings') return <OpeningTrainer onExit={() => setScreen('home')} />
   if (tactics) return <TacticsSession choice={tactics} onExit={() => setTactics(null)} />
 
@@ -274,6 +276,7 @@ export function PuzzlesView({ active, paused, onOpenGame }: Props) {
 
       <TacticsCard ownThemes={stats.themes} onStart={setTactics} />
       <OpeningsCard onOpen={() => setScreen('openings')} />
+      <EndgamesCard onOpen={() => setScreen('endgames')} />
 
       <section className="review-panel">
         <div className="review-title">Find puzzles</div>

@@ -1,0 +1,89 @@
+/* Green/cream board theme in the style of chess.com's default board. */
+
+cg-board {
+  background-color: var(--sq-light);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23769656' d='M1 0h1v1H1zM3 0h1v1H3zM5 0h1v1H5zM7 0h1v1H7zM0 1h1v1H0zM2 1h1v1H2zM4 1h1v1H4zM6 1h1v1H6zM1 2h1v1H1zM3 2h1v1H3zM5 2h1v1H5zM7 2h1v1H7zM0 3h1v1H0zM2 3h1v1H2zM4 3h1v1H4zM6 3h1v1H6zM1 4h1v1H1zM3 4h1v1H3zM5 4h1v1H5zM7 4h1v1H7zM0 5h1v1H0zM2 5h1v1H2zM4 5h1v1H4zM6 5h1v1H6zM1 6h1v1H1zM3 6h1v1H3zM5 6h1v1H5zM7 6h1v1H7zM0 7h1v1H0zM2 7h1v1H2zM4 7h1v1H4zM6 7h1v1H6z'/%3E%3C/svg%3E");
+}
+
+.board {
+  --sq-light: #eeeed2;
+  --sq-dark: #769656;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* Last move and selection: yellow tint like chess.com. */
+cg-board square.last-move {
+  background-color: rgba(255, 255, 51, 0.45);
+}
+cg-board square.selected {
+  background-color: rgba(255, 255, 51, 0.5);
+}
+
+/* Legal move dots and capture rings. */
+cg-board square.move-dest {
+  background: radial-gradient(rgba(0, 0, 0, 0.14) 19%, rgba(0, 0, 0, 0) 20%);
+}
+cg-board square.oc.move-dest {
+  background: radial-gradient(transparent 0%, transparent 79%, rgba(0, 0, 0, 0.14) 80%);
+}
+cg-board square.move-dest:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Premoves: red, as on chess.com. */
+cg-board square.premove-dest {
+  background: radial-gradient(rgba(180, 40, 40, 0.35) 19%, rgba(0, 0, 0, 0) 20%);
+}
+cg-board square.oc.premove-dest {
+  background: radial-gradient(transparent 0%, transparent 79%, rgba(180, 40, 40, 0.35) 80%);
+}
+cg-board square.current-premove {
+  background-color: rgba(214, 79, 79, 0.65);
+}
+
+cg-board square.check {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 0, 0, 1) 0%,
+    rgba(231, 0, 0, 1) 25%,
+    rgba(169, 0, 0, 0) 89%,
+    rgba(158, 0, 0, 0) 100%
+  );
+}
+
+/* Coordinates inside the edge squares, colored opposite to the square. */
+.cg-wrap coords {
+  font-size: clamp(8px, 1.6vmin, 13px);
+  font-weight: 700;
+  opacity: 1;
+}
+.cg-wrap coords.ranks {
+  left: 3px;
+  top: 2px;
+  height: 100%;
+  width: auto;
+}
+.cg-wrap coords.ranks coord {
+  transform: none;
+}
+.cg-wrap coords.files {
+  bottom: 2px;
+  left: 0;
+  height: auto;
+  text-transform: lowercase;
+  text-align: right;
+}
+.cg-wrap coords.files coord {
+  padding-right: 4px;
+}
+.cg-wrap coords.ranks coord:nth-child(odd),
+.cg-wrap coords.files coord:nth-child(odd) {
+  color: var(--sq-light);
+}
+.cg-wrap coords.ranks coord:nth-child(even),
+.cg-wrap coords.files coord:nth-child(even) {
+  color: var(--sq-dark);
+}

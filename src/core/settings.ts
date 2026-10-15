@@ -5,6 +5,8 @@ export interface GameSettings {
   /** 'random' is resolved to a color when the game starts. */
   color: 'w' | 'b' | 'random'
   botLevel: number
+  /** Name the opponent's threat before each of my moves. */
+  blunderCheck?: boolean
 }
 
 export const TIME_CONTROLS: { label: string; group: string; tc: TimeControl | null }[] = [

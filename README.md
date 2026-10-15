@@ -3,7 +3,7 @@
 A personal, chess.com-style chess app for playing, analysing and learning — mobile-first,
 running fully in the browser. See [PLAN.md](PLAN.md) for the roadmap (v1 → v2 voice + AI coach).
 
-## Features so far (v1.0 + puzzles from v1.1)
+## Features so far (v1.0 + training features from v1.1)
 
 - Green/cream board (chessground) with drag or click-to-move, legal-move dots,
   **premoves**, right-click arrows/highlights, last-move and check highlights
@@ -32,6 +32,10 @@ running fully in the browser. See [PLAN.md](PLAN.md) for the roadmap (v1 → v2 
   punish a blunder, missed/allowed mate, positional); spaced repetition (SM-2 style:
   1 → 3 → 8… days, missed ones back in 10 min); practice by theme; open the source game
   at that move
+- **Blunder check** (new-game option): after each bot move you name its threat — move
+  one of its pieces, or tap "No threat" — before you may move. Stockfish checks what the
+  bot could do if you passed (null move) and grades you: spotted / missed (red arrow) /
+  false alarm; running score per game. Skipped after captures and checks
 - Installable PWA (offline), screen kept awake during games
 
 ## Live
@@ -56,7 +60,9 @@ is on the same Wi-Fi.
 ```
 src/core/     logic independent of UI: GameSession (rules, clock, result, events), ChessClock,
               MoveTree (variations + PGN), openings lookup, material, settings
-src/engine/   Stockfish worker wrapper (UCI search + streaming analysis), eval helpers, bot levels
+src/engine/   Stockfish worker wrapper (UCI search + streaming analysis), eval helpers, bot levels,
+              threat detection for blunder check
+src/play/     blunder-check hook (threat question state + score)
 src/puzzles/  puzzle extraction from reviews, game scanner, spaced-repetition scheduler
 src/review/   Game Review: move classification + accuracy (pure), engine runner, review and
               retry hooks

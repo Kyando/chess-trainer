@@ -1,4 +1,4 @@
-import type { Chess } from 'chess.js'
+import { Chess } from 'chess.js'
 import type { Color } from './types'
 
 const VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 }
@@ -37,4 +37,23 @@ export function materialSummary(chess: Chess): MaterialSummary {
   }
   const diff = points.w - points.b
   return { captured, lead: { w: Math.max(0, diff), b: Math.max(0, -diff) } }
+}
+
+const BALANCE_VALUES: Record<string, number> = { ...VALUES, k: 0 }
+
+/** Material balance in pawns for `color` after playing `ucis` from `fen` (stops at an illegal move). */
+export function materialBalance(fen: string, ucis: string[], color: Color): number {
+  const chess = new Chess(fen)
+  for (const u of ucis) {
+    try {
+      chess.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] })
+    } catch {
+      break
+    }
+  }
+  let total = 0
+  for (const row of chess.board()) {
+    for (const sq of row) if (sq) total += (sq.color === color ? 1 : -1) * BALANCE_VALUES[sq.type]
+  }
+  return total
 }

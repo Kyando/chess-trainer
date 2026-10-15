@@ -5,7 +5,7 @@ import { opposite, type Color, type PromotionPiece } from '../core/types'
 import { botLevel, chooseBotMove, thinkDelayMs } from '../engine/bot'
 import { StockfishEngine } from '../engine/stockfish'
 import { uciToIntent } from '../engine/uci'
-import { Board } from '../ui/Board'
+import { Board, type Arrow } from '../ui/Board'
 import { MoveList } from '../ui/MoveList'
 import type { GameSettings } from '../core/settings'
 import { NewGameDialog } from '../ui/NewGameDialog'
@@ -16,6 +16,9 @@ import { useWakeLock } from '../ui/useWakeLock'
 import { MoveTree, START_FEN } from '../core/tree'
 import { db, saveGames, type TimeClass } from '../data/db'
 import { detectOpening, loadOpenings } from '../core/openings'
+import { threatDests } from '../engine/threat'
+import { useThreatCheck } from '../play/useThreatCheck'
+import { ThreatCheckPanel } from '../ui/ThreatCheckPanel'
 
 const SETTINGS_KEY = 'chess-trainer.settings'
 const DEFAULT_SETTINGS: GameSettings = { timeControl: { initial: 300, increment: 0 }, color: 'w', botLevel: 3 }
@@ -73,6 +76,9 @@ export function PlayView({ active, onAnalyze }: Props) {
   const engineRef = useRef<StockfishEngine | null>(null)
   const botToken = useRef(0) // bumps to invalidate an in-flight bot move
   const lowTimeWarned = useRef(false)
+  const { check: threatCheck, score: threatScore, ask: askThreat, answer: answerThreat, clear: clearThreat, reset: resetThreat } =
+    useThreatCheck(engineRef)
+  const blunderCheck = !!settings.blunderCheck
 
   useEffect(() => {
     const engine = new StockfishEngine()
@@ -131,9 +137,15 @@ export function PlayView({ active, onAnalyze }: Props) {
       setTimeout(() => {
         if (token !== botToken.current) return
         setThinking(false)
-        if (uci && session.fen === fen) session.move(uciToIntent(uci))
+        if (!uci || session.fen !== fen) return
+        const move = session.move(uciToIntent(uci))
+        // Blunder check: ask about the threat, except after a capture (recapturing
+        // comes first) or a check (the threat is obvious).
+        if (move && blunderCheck && !session.isOver && !move.captured && !session.chess.inCheck()) askThreat(session.fen)
       }, wait)
     })
+    // askThreat is stable; blunderCheck only changes when a new game starts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ply, session, botColor, level, started])
 
   const startGame = useCallback((s: GameSettings) => {
@@ -150,27 +162,33 @@ export function PlayView({ active, onAnalyze }: Props) {
     setShowResult(false)
     setShowNewGame(false)
     setPendingPromotion(null)
+    resetThreat()
     setSession(new GameSession({ timeControl: s.timeControl }))
     void engineRef.current?.newGame()
     playSound('start')
-  }, [])
+  }, [resetThreat])
 
   const playMove = useCallback(
     (from: string, to: string, promotion?: PromotionPiece) => {
       if (!session.move({ from, to, promotion })) {
         playSound('illegal')
         resyncBoard() // snap the board back
-      }
+      } else clearThreat()
     },
-    [session],
+    [session, clearThreat],
   )
 
   const onBoardMove = useCallback(
     (from: string, to: string, premove: boolean) => {
+      if (threatCheck?.phase === 'ask') {
+        void answerThreat(from + to)
+        resyncBoard() // put their piece back
+        return
+      }
       if (session.isPromotion(from, to) && !premove) setPendingPromotion({ from, to })
       else playMove(from, to)
     },
-    [session, playMove],
+    [session, playMove, threatCheck, answerThreat],
   )
 
   // Resigning takes two taps, so a stray touch on a phone can't end the game.
@@ -181,6 +199,7 @@ export function PlayView({ active, onAnalyze }: Props) {
       return
     }
     setConfirmResign(false)
+    clearThreat()
     session.resign(playerColor)
   }
 
@@ -188,6 +207,7 @@ export function PlayView({ active, onAnalyze }: Props) {
     if (!gameActive) return
     botToken.current++
     setThinking(false)
+    clearThreat()
     // Undo the bot's reply too, so it is the player's turn again.
     const plies = session.turn === playerColor ? 2 : 1
     session.undo(Math.min(plies, history.length))
@@ -207,6 +227,18 @@ export function PlayView({ active, onAnalyze }: Props) {
     () => (browsing || isOver || !liveFen ? new Map<string, string[]>() : session.legalDests()),
     [session, liveFen, browsing, isOver],
   )
+
+  // While naming a threat I move the opponent's pieces, as if I had passed.
+  const naming = threatCheck?.phase === 'ask' && !browsing
+  const boardDests = useMemo(() => (naming ? threatDests(liveFen) : dests), [naming, liveFen, dests])
+  const threatArrows: Arrow[] = []
+  if (threatCheck?.phase === 'done' && !browsing) {
+    const { analysis, answer } = threatCheck
+    const main = analysis?.threats[0]
+    if (answer && answer.slice(0, 4) !== main?.uci.slice(0, 4)) threatArrows.push({ from: answer.slice(0, 2), to: answer.slice(2, 4), brush: 'blue' })
+    if (main) threatArrows.push({ from: main.uci.slice(0, 2), to: main.uci.slice(2, 4), brush: 'red' })
+  }
+  const waitingForThreat = threatCheck != null && threatCheck.phase !== 'done'
 
   const goTo = useCallback(
     (p: number) => {
@@ -318,7 +350,9 @@ export function PlayView({ active, onAnalyze }: Props) {
       : thinking
         ? 'Stockfish is thinking…'
         : session.turn === playerColor
-          ? 'Your move'
+          ? threatCheck && threatCheck.phase !== 'done'
+            ? 'Blunder check'
+            : 'Your move'
           : ''
 
   return (
@@ -330,9 +364,13 @@ export function PlayView({ active, onAnalyze }: Props) {
             <Board
               fen={shownFen}
               orientation={colorName(orientation)}
-              turnColor={colorName(shownTurn)}
-              movableColor={gameActive && !browsing ? colorName(playerColor) : undefined}
-              dests={dests}
+              turnColor={colorName(naming ? botColor : shownTurn)}
+              movableColor={
+                naming ? colorName(botColor) : gameActive && !browsing && !waitingForThreat ? colorName(playerColor) : undefined
+              }
+              dests={boardDests}
+              arrows={threatArrows}
+              premoves={!blunderCheck}
               lastMove={shownMove ? [shownMove.from, shownMove.to] : undefined}
               check={(shownMove?.san.includes('+') || shownMove?.san.includes('#')) ?? false}
               onMove={onBoardMove}
@@ -349,6 +387,14 @@ export function PlayView({ active, onAnalyze }: Props) {
               New game
             </button>
           </div>
+          {blunderCheck && started && (
+            <ThreatCheckPanel
+              check={browsing ? null : threatCheck}
+              score={threatScore}
+              opponentName={botColor === 'w' ? 'White' : 'Black'}
+              onNoThreat={() => void answerThreat(null)}
+            />
+          )}
           <MoveList sans={history.map((m) => m.san)} viewPly={shownPly} onSelect={goTo} />
           <div className="nav-row">
             <button className="btn icon" onClick={() => goTo(0)} aria-label="First move">
@@ -412,6 +458,11 @@ export function PlayView({ active, onAnalyze }: Props) {
               {session.result.winner === null ? 'Draw' : session.result.winner === playerColor ? 'You won!' : 'You lost'}
             </h2>
             <p className="muted">{describeResult(session.result)}</p>
+            {blunderCheck && threatScore.asked > 0 && (
+              <p>
+                🛡 Threats named right: {threatScore.right}/{threatScore.asked}
+              </p>
+            )}
             <div className="dialog-actions">
               <button className="btn secondary" onClick={downloadPgn}>
                 Download PGN

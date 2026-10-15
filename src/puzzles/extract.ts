@@ -1,4 +1,4 @@
-import { Chess } from 'chess.js'
+import { materialBalance as balance } from '../core/material'
 import type { Color } from '../core/types'
 import type { TimeClass } from '../data/db'
 import { ERRORS, type GameReview, type MoveClass, type PositionEval } from '../review/review'
@@ -111,23 +111,4 @@ function themesOf(
   if (start - balance(fen, [played, ...(after?.pv?.slice(0, 1) ?? [])], color) >= 2) themes.push('hanging-piece')
   if (balance(fen, pv.slice(0, 3), color) - start >= 2) themes.push('missed-material')
   return themes.length ? themes : ['positional']
-}
-
-const VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
-
-/** Material balance for `color` after playing `ucis` from `fen` (stops at an illegal move). */
-function balance(fen: string, ucis: string[], color: Color): number {
-  const chess = new Chess(fen)
-  for (const u of ucis) {
-    try {
-      chess.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] })
-    } catch {
-      break
-    }
-  }
-  let total = 0
-  for (const row of chess.board()) {
-    for (const sq of row) if (sq) total += (sq.color === color ? 1 : -1) * VALUES[sq.type]
-  }
-  return total
 }

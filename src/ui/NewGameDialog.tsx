@@ -73,6 +73,18 @@ export function NewGameDialog({ initial, onStart, onCancel }: Props) {
           </div>
         </section>
 
+        <section>
+          <h3>Training</h3>
+          <button
+            className={`chip${settings.blunderCheck ? ' selected' : ''}`}
+            aria-pressed={!!settings.blunderCheck}
+            onClick={() => setSettings({ ...settings, blunderCheck: !settings.blunderCheck })}
+          >
+            🛡 Blunder check
+          </button>
+          <p className="muted hint">Before each move, name what the bot threatens. Best with a slow clock or none.</p>
+        </section>
+
         <div className="dialog-actions">
           <button className="btn secondary" onClick={onCancel}>
             Cancel

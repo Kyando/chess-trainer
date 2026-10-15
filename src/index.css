@@ -1210,3 +1210,48 @@ button {
     font-size: 14px;
   }
 }
+
+/* ---------- Blunder check ---------- */
+
+.threat-check {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-left: 4px solid transparent;
+}
+
+.threat-check.asking {
+  border-left-color: #f0c674;
+}
+
+.threat-check.right {
+  border-left-color: var(--accent);
+}
+
+.threat-check.wrong {
+  border-left-color: #ff8a80;
+}
+
+.threat-check .hint {
+  margin: 0;
+  font-size: 13px;
+}
+
+.threat-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.threat-score {
+  float: right;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.dialog .hint {
+  font-size: 13px;
+  margin: 6px 0 0;
+}

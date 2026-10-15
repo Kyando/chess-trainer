@@ -57,7 +57,7 @@ Concept tags shared by mistakes, puzzles and lessons: fork, pin, hanging-piece, 
 - [x] Spaced repetition (FSRS/SM-2) for failed puzzles and positions
 - [ ] Theme detection + lichess puzzle DB (CC0) for matching drills
 - [ ] Opening trainer from my real games; endgame drills vs engine
-- [ ] "Blunder check" mode: name opponent's threat before moving
+- [x] "Blunder check" mode: name opponent's threat before moving
 - [ ] Insights dashboard: results by opening, blunders by phase, **blunders vs clock time**
 
 ### v1.2 — Theory → practice (lesson engine)

@@ -34,6 +34,8 @@ export interface BoardProps {
   arrows?: Arrow[]
   /** Small round badges in a square's corner (e.g. Game Review's move classification). */
   badges?: Badge[]
+  /** Allow queuing moves during the opponent's turn (default true). */
+  premoves?: boolean
   /** Bump to force the board back in sync (e.g. after a cancelled promotion). */
   syncKey?: number
   /** `premove` is true when a queued premove was just played. */
@@ -83,16 +85,17 @@ export function Board(props: BoardProps) {
       check: props.check,
       lastMove: lastMoveKey ? [lastMoveKey.slice(0, 2), lastMoveKey.slice(2, 4)] as Key[] : undefined,
       viewOnly: false,
+      premovable: { enabled: props.premoves ?? true },
       movable: {
         color: props.movableColor,
         dests: props.dests as Map<Key, Key[]>,
       },
     }
     cg.set(config)
-    if (!props.movableColor) cg.cancelPremove()
+    if (!props.movableColor || props.premoves === false) cg.cancelPremove()
     // A premove queued during the opponent's turn fires as soon as it is ours.
     else if (props.turnColor === props.movableColor) cg.playPremove()
-  }, [props.fen, props.orientation, props.turnColor, props.movableColor, props.dests, lastMoveKey, props.check, props.syncKey])
+  }, [props.fen, props.orientation, props.turnColor, props.movableColor, props.dests, lastMoveKey, props.check, props.premoves, props.syncKey])
 
   const shapesKey = JSON.stringify([props.arrows ?? [], props.badges ?? []])
   useEffect(() => {

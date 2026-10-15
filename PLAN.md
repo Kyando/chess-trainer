@@ -46,7 +46,7 @@ Concept tags shared by mistakes, puzzles and lessons: fork, pin, hanging-piece, 
 - [x] **Phase 1b — PWA:** installable, offline, wake lock incl. iOS home-screen icon
 - [x] **Phase 2 — Analysis board:** eval bar, MultiPV lines, move tree with variations,
       PGN/FEN import/export, opening names (lichess-org/chess-openings, CC0)
-- [ ] **Phase 3 — chess.com import:** `api.chess.com/pub/player/{user}/games/archives`
+- [x] **Phase 3 — chess.com import:** `api.chess.com/pub/player/{user}/games/archives`
       → monthly PGN (incl. `%clk` clock times) → IndexedDB; filterable games list
 - [ ] **Phase 4 — Game Review:** per-move classification (Best/Excellent/Good/Book/
       Inaccuracy/Mistake/Blunder/Miss), accuracy via lichess win% formula, eval graph,

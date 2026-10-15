@@ -61,3 +61,14 @@ describe('MoveTree', () => {
     expect(() => MoveTree.fromPgn('1. e4 e4')).toThrow(/Illegal move/)
   })
 })
+
+describe('chess.com PGNs', () => {
+  it('reads clock annotations into nodes instead of comments', () => {
+    const t = MoveTree.fromPgn('1. e4 {[%clk 0:04:59.9]} 1... e5 {[%clk 0:04:56.4] a note} *')
+    const [e4, e5] = t.mainline()
+    expect(e4.clock).toBe(299_900)
+    expect(e4.comment).toBeUndefined()
+    expect(e5.clock).toBe(296_400)
+    expect(e5.comment).toBe('a note')
+  })
+})

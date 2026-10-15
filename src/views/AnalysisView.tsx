@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { formatClock } from '../core/clock'
 import { loadOpenings, openingFor } from '../core/openings'
 import { MoveTree } from '../core/tree'
 import type { Color, PromotionPiece } from '../core/types'
@@ -174,6 +175,10 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
     setTimeout(() => setCopied(null), 1500)
   }
 
+  const h = tree.headers
+  // Clock left after the move just played (chess.com games carry [%clk] per move).
+  const clockText = node.clock !== undefined ? `⏱ ${formatClock(node.clock)} left` : ''
+
   const isVariation = node.parentId !== null && !tree.isMainline(currentId)
 
   return (
@@ -207,6 +212,27 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
           onPlayLine={playLine}
           status={gameOver ? (chess.isCheckmate() ? 'checkmate' : 'draw') : undefined}
         />
+        {(h.White || h.Black) && (
+          <div className="game-header">
+            <span>
+              <strong>{h.White ?? '?'}</strong>
+              {h.WhiteElo && <span className="muted"> ({h.WhiteElo})</span>} vs <strong>{h.Black ?? '?'}</strong>
+              {h.BlackElo && <span className="muted"> ({h.BlackElo})</span>}
+              {h.Result && h.Result !== '*' && <span className="muted"> · {h.Result}</span>}
+            </span>
+            <span className="muted">
+              {clockText}
+              {h.Link && (
+                <>
+                  {clockText && ' · '}
+                  <a href={h.Link} target="_blank" rel="noreferrer">
+                    chess.com ↗
+                  </a>
+                </>
+              )}
+            </span>
+          </div>
+        )}
         <div className="opening-name">{opening ? `${opening.eco} · ${opening.name}` : ' '}</div>
         <TreeView tree={tree} currentId={currentId} onSelect={setCurrentId} />
         {isVariation && (

@@ -14,6 +14,8 @@ import { PromotionDialog } from '../ui/PromotionDialog'
 import { playSound, soundForMove } from '../ui/sounds'
 import { useWakeLock } from '../ui/useWakeLock'
 import { MoveTree, START_FEN } from '../core/tree'
+import { db, saveGames, type TimeClass } from '../data/db'
+import { detectOpening, loadOpenings } from '../core/openings'
 
 const SETTINGS_KEY = 'chess-trainer.settings'
 const DEFAULT_SETTINGS: GameSettings = { timeControl: { initial: 300, increment: 0 }, color: 'w', botLevel: 3 }
@@ -35,6 +37,13 @@ function saveSettings(s: GameSettings) {
   } catch {
     /* ignore */
   }
+}
+
+/** chess.com's buckets by estimated game length (base + 40 × increment). */
+function timeClassOf(tc: { initial: number; increment: number } | null): TimeClass {
+  if (!tc) return 'rapid'
+  const estimate = tc.initial + 40 * tc.increment
+  return estimate < 180 ? 'bullet' : estimate < 600 ? 'blitz' : 'rapid'
 }
 
 const colorName = (c: Color) => (c === 'w' ? 'white' : 'black')
@@ -238,14 +247,50 @@ export function PlayView({ active, onAnalyze }: Props) {
     )
   }
 
+  const botName = `Stockfish ${level.name}`
   const pgnHeaders = () => ({
-      Event: 'Casual game vs computer',
-      Site: 'Chess Trainer',
-      Date: new Date().toISOString().slice(0, 10).replaceAll('-', '.'),
-      White: playerColor === 'w' ? 'You' : `Stockfish ${level.name}`,
-      Black: playerColor === 'b' ? 'You' : `Stockfish ${level.name}`,
+    Event: 'Casual game vs computer',
+    Site: 'Chess Trainer',
+    Date: new Date().toISOString().slice(0, 10).replaceAll('-', '.'),
+    White: playerColor === 'w' ? 'You' : botName,
+    Black: playerColor === 'b' ? 'You' : botName,
   })
   const pgnText = () => session.pgn(pgnHeaders())
+
+  // Save finished games (with at least one move each) to the Games list.
+  const saved = useRef(new WeakSet<GameSession>())
+  const result = session.result
+  useEffect(() => {
+    if (!result || saved.current.has(session) || session.history.length < 2) return
+    saved.current.add(session)
+    const tc = session.timeControl
+    const pgn = session.pgn(pgnHeaders())
+    const me = { name: 'You', result: result.winner === playerColor ? 'win' : result.winner ? result.reason : 'draw' }
+    const bot = { name: botName, rating: level.approxElo, result: result.winner === playerColor ? result.reason : result.winner ? 'win' : 'draw' }
+    const sans = session.history.map((m) => m.san)
+    const endTime = Date.now()
+    void loadOpenings().then(() => {
+      const opening = detectOpening(sans)
+      const record = {
+        id: `bot:${endTime}`,
+        source: 'bot' as const,
+        white: playerColor === 'w' ? me : bot,
+        black: playerColor === 'b' ? me : bot,
+        userColor: playerColor,
+        outcome: result.winner === null ? ('draw' as const) : result.winner === playerColor ? ('win' as const) : ('loss' as const),
+        timeClass: timeClassOf(tc),
+        timeControl: tc ? (tc.increment ? `${tc.initial}+${tc.increment}` : String(tc.initial)) : '-',
+        rated: false,
+        endTime,
+        plies: sans.length,
+        eco: opening?.eco,
+        opening: opening?.name,
+      }
+      return saveGames(db, [{ record, pgn }])
+    })
+    // pgnHeaders/botName only read current settings; the session identity guards re-saving.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, session])
 
   const analyze = () => {
     setShowResult(false)

@@ -1,3 +1,5 @@
+import { Chess } from 'chess.js'
+
 export interface Opening {
   eco: string
   name: string
@@ -27,4 +29,24 @@ export function openingFor(fens: string[]): Opening | null {
     if (hit) return { eco: hit[0], name: hit[1] }
   }
   return null
+}
+
+/**
+ * Names the opening of a game from its SAN moves by replaying only the first
+ * `maxPlies` moves. Requires `loadOpenings()` to have resolved.
+ */
+export function detectOpening(sans: string[], maxPlies = 30): Opening | null {
+  if (!table) return null
+  const chess = new Chess()
+  let found: Opening | null = null
+  for (const san of sans.slice(0, maxPlies)) {
+    try {
+      chess.move(san)
+    } catch {
+      break
+    }
+    const hit = table[positionKey(chess.fen())]
+    if (hit) found = { eco: hit[0], name: hit[1] }
+  }
+  return found
 }

@@ -721,3 +721,269 @@ button {
     padding: 6px 9px;
   }
 }
+
+@media (max-width: 480px) {
+  .brand-text {
+    display: none;
+  }
+}
+
+/* ---------- Games list ---------- */
+
+.games-view {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 10px 10px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sync-form {
+  display: flex;
+  gap: 8px;
+}
+
+.text-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--panel-2);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 16px; /* avoids iOS zoom on focus */
+}
+
+.text-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.sync-btn {
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.sync-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.progress-track {
+  height: 6px;
+  background: var(--panel-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+
+.games-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: center;
+}
+
+.filter-line .search {
+  flex: 1 1 160px;
+  font-size: 14px;
+  padding: 6px 10px;
+}
+
+.chip.small {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.games-stats {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.stat.win {
+  color: var(--accent);
+}
+.stat.draw {
+  color: var(--text-muted);
+}
+.stat.loss {
+  color: #e57373;
+}
+
+.empty-state {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 30px 10px;
+  line-height: 1.5;
+}
+
+.games-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.game-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 0;
+  border-radius: var(--radius);
+  padding: 8px 10px 8px 0;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.game-row:hover {
+  background: #2e2b28;
+}
+
+.outcome-bar {
+  align-self: stretch;
+  width: 4px;
+  flex: none;
+  border-radius: 0 2px 2px 0;
+  margin: -8px 0;
+}
+.outcome-bar.win {
+  background: var(--accent);
+}
+.outcome-bar.loss {
+  background: #e57373;
+}
+.outcome-bar.draw {
+  background: #8b8987;
+}
+
+.game-tc {
+  flex: none;
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.tc-text {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.game-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.game-players,
+.game-opening {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-players {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.game-opening {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.color-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: -1px;
+  border: 1px solid #8b8987;
+}
+.color-dot.white {
+  background: #fff;
+}
+.color-dot.black {
+  background: #000;
+}
+
+.game-meta {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 11px;
+  gap: 1px;
+}
+
+.outcome-badge {
+  font-weight: 800;
+  font-size: 15px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+}
+.outcome-badge.win {
+  background: var(--accent);
+}
+.outcome-badge.loss {
+  background: #e57373;
+}
+.outcome-badge.draw {
+  background: #8b8987;
+}
+
+.show-more {
+  align-self: center;
+}
+
+@media (max-width: 480px) {
+  .my-rating {
+    display: none;
+  }
+}
+
+/* ---------- Analysis game header ---------- */
+
+.game-header {
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.game-header a {
+  color: #8fbcdb;
+}

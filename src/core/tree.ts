@@ -1,4 +1,5 @@
 import { Chess, type Move } from 'chess.js'
+import { parseClock, stripCommands } from './pgn'
 import type { MoveIntent } from './types'
 
 export const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
@@ -14,6 +15,8 @@ export interface TreeNode {
   /** children[0] continues the main line; the rest are variations. */
   children: string[]
   comment?: string
+  /** Clock time left after this move, in ms (from PGN [%clk] annotations). */
+  clock?: number
 }
 
 /**
@@ -142,8 +145,12 @@ export class MoveTree {
 
     for (const token of tokens) {
       if (token.startsWith('{')) {
-        const comment = token.slice(1, -1).trim()
-        if (comment) tree.get(current).comment = comment
+        const raw = token.slice(1, -1)
+        const node = tree.get(current)
+        const clock = parseClock(raw)
+        if (clock !== undefined) node.clock = clock
+        const comment = stripCommands(raw)
+        if (comment) node.comment = comment
       } else if (token === '(') {
         stack.push(current)
         // A variation replaces the last move: branch from its parent.

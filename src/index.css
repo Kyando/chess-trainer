@@ -1431,3 +1431,31 @@ button {
   text-align: right;
   font-size: 12px;
 }
+
+/* ---------- Opening trainer ---------- */
+
+.opening-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+
+.opening-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.opening-list li.leak strong {
+  color: #f0a35e;
+}
+
+.opening-line {
+  color: var(--text-muted);
+  font-size: 12px;
+}

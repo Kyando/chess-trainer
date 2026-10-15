@@ -13,6 +13,7 @@ import { REVIEW_NODES, winAfterMove } from '../review/runner'
 import { useQuiz, type QuizOutcome } from '../review/useQuiz'
 import { Board, type Arrow } from '../ui/Board'
 import { useWakeLock } from '../ui/useWakeLock'
+import { OpeningsCard, OpeningTrainer } from './OpeningTrainer'
 import { TacticsCard, TacticsSession, type TacticsChoice } from './TacticsTrainer'
 
 /** Puzzles per training session. */
@@ -46,6 +47,7 @@ export function PuzzlesView({ active, paused, onOpenGame }: Props) {
   const [scanResult, setScanResult] = useState<string | null>(null)
   const [now, setNow] = useState(() => Date.now())
   const [tactics, setTactics] = useState<TacticsChoice | null>(null)
+  const [screen, setScreen] = useState<'home' | 'openings' | 'endgames'>('home')
   const engineRef = useRef<StockfishEngine | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const pausedRef = useRef(paused)
@@ -142,6 +144,7 @@ export function PuzzlesView({ active, paused, onOpenGame }: Props) {
     }
   }, [puzzles, now])
 
+  if (screen === 'openings') return <OpeningTrainer onExit={() => setScreen('home')} />
   if (tactics) return <TacticsSession choice={tactics} onExit={() => setTactics(null)} />
 
   if (drill) {
@@ -270,6 +273,7 @@ export function PuzzlesView({ active, paused, onOpenGame }: Props) {
       )}
 
       <TacticsCard ownThemes={stats.themes} onStart={setTactics} />
+      <OpeningsCard onOpen={() => setScreen('openings')} />
 
       <section className="review-panel">
         <div className="review-title">Find puzzles</div>

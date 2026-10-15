@@ -3,7 +3,7 @@
 A personal, chess.com-style chess app for playing, analysing and learning — mobile-first,
 running fully in the browser. See [PLAN.md](PLAN.md) for the roadmap (v1 → v2 voice + AI coach).
 
-## Features so far (v1.0, phases 1–3)
+## Features so far (v1.0, phases 1–4)
 
 - Green/cream board (chessground) with drag or click-to-move, legal-move dots,
   **premoves**, right-click arrows/highlights, last-move and check highlights
@@ -20,6 +20,12 @@ running fully in the browser. See [PLAN.md](PLAN.md) for the roadmap (v1 → v2 
 - **Games**: import your whole chess.com history (public API, incremental re-sync),
   plus your games vs the bot; filter by time class, color, result, opponent/opening;
   win/draw/loss stats; open any game in analysis with per-move clock times
+- **Game Review**: one tap runs Stockfish over the whole game (~15 s on a laptop, cached
+  in IndexedDB); every move classified Book / Best / Great / Excellent / Good /
+  Inaccuracy / Mistake / Miss / Blunder with badges on the board and in the move list;
+  accuracy per player (lichess formula); clickable eval graph; "best was …" with the line;
+  jump between errors; **Retry mistakes** drills each of your errors, checking your
+  answer with the engine
 - Installable PWA (offline), screen kept awake during games
 
 ## Live
@@ -45,6 +51,8 @@ is on the same Wi-Fi.
 src/core/     logic independent of UI: GameSession (rules, clock, result, events), ChessClock,
               MoveTree (variations + PGN), openings lookup, material, settings
 src/engine/   Stockfish worker wrapper (UCI search + streaming analysis), eval helpers, bot levels
+src/review/   Game Review: move classification + accuracy (pure), engine runner, review and
+              retry hooks
 src/views/    PlayView (game vs bot), GamesView, AnalysisView
 src/import/   chess.com importer
 src/data/     IndexedDB (Dexie) games store, filters/stats

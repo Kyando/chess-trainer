@@ -18,6 +18,11 @@ export function loadOpenings(): Promise<OpeningTable> {
 
 export const positionKey = (fen: string) => fen.split(' ').slice(0, 4).join(' ')
 
+/** Whether a position is in the opening table (false until it is loaded). */
+export function isBookPosition(fen: string): boolean {
+  return !!table?.[positionKey(fen)]
+}
+
 /**
  * The most specific named opening along a line of positions (start → current),
  * or null if the table is not loaded yet or nothing matches.

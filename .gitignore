@@ -25,3 +25,6 @@ dist-ssr
 
 # Stockfish engine copied from node_modules by scripts/copy-engine.mjs
 public/engine
+
+# Personal reports (contain game data)
+reports/

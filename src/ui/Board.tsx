@@ -9,8 +9,16 @@ import './board-theme.css'
 
 export interface Arrow {
   from: string
-  to: string
+  /** Omitted: a circle on `from`. */
+  to?: string
   brush: 'green' | 'red' | 'blue' | 'yellow' | 'paleBlue' | 'paleGreen' | 'paleRed' | 'paleGrey'
+}
+
+export interface Badge {
+  square: string
+  /** One or two characters. */
+  glyph: string
+  color: string
 }
 
 export interface BoardProps {
@@ -24,6 +32,8 @@ export interface BoardProps {
   check: boolean
   /** Arrows drawn by the app (e.g. the engine's best move), separate from the user's own. */
   arrows?: Arrow[]
+  /** Small round badges in a square's corner (e.g. Game Review's move classification). */
+  badges?: Badge[]
   /** Bump to force the board back in sync (e.g. after a cancelled promotion). */
   syncKey?: number
   /** `premove` is true when a queued premove was just played. */
@@ -84,11 +94,24 @@ export function Board(props: BoardProps) {
     else if (props.turnColor === props.movableColor) cg.playPremove()
   }, [props.fen, props.orientation, props.turnColor, props.movableColor, props.dests, lastMoveKey, props.check, props.syncKey])
 
-  const arrowsKey = JSON.stringify(props.arrows ?? [])
+  const shapesKey = JSON.stringify([props.arrows ?? [], props.badges ?? []])
   useEffect(() => {
-    const arrows: Arrow[] = JSON.parse(arrowsKey)
-    api.current?.setAutoShapes(arrows.map((a) => ({ orig: a.from as Key, dest: a.to as Key, brush: a.brush })))
-  }, [arrowsKey])
+    const [arrows, badges]: [Arrow[], Badge[]] = JSON.parse(shapesKey)
+    api.current?.setAutoShapes([
+      ...arrows.map((a) => ({ orig: a.from as Key, dest: a.to as Key | undefined, brush: a.brush })),
+      ...badges.map((b) => ({ orig: b.square as Key, customSvg: { html: badgeSvg(b) } })),
+    ])
+  }, [shapesKey])
 
   return <div ref={el} className="cg-wrap board" />
+}
+
+/** Badge drawn in the square's top-right corner; the square spans -50..50 around 0,0. */
+function badgeSvg({ glyph, color }: Badge): string {
+  const size = glyph.length > 1 ? 21 : 26
+  return (
+    `<g transform="translate(32 -32)"><circle r="22" fill="${color}" stroke="#fff" stroke-width="3"/>` +
+    `<text text-anchor="middle" dominant-baseline="central" y="1" font-size="${size}" font-weight="800" ` +
+    `font-family="system-ui, sans-serif" fill="#fff">${glyph}</text></g>`
+  )
 }

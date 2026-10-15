@@ -67,7 +67,7 @@ button {
 
 .board-column {
   /* Full width on phones, but never taller than the screen allows. */
-  width: min(100vw, calc(100dvh - 230px));
+  width: min(100%, calc(100dvh - 230px));
   min-width: 280px;
   display: flex;
   flex-direction: column;
@@ -82,7 +82,7 @@ button {
 }
 
 .side-panel {
-  width: min(100vw, 520px);
+  width: min(100%, 520px);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -608,6 +608,7 @@ button {
 }
 
 .engine-moves {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -636,6 +637,7 @@ button {
 }
 
 .tree {
+  position: relative; /* offsetTop of moves is measured from here */
   background: var(--panel);
   border-radius: var(--radius);
   padding: 8px;
@@ -708,8 +710,16 @@ button {
   /* Inner boxes sit on the panel background on desktop. */
   .side-panel .tree,
   .side-panel .engine-panel,
+  .side-panel .review-panel,
   .side-panel .move-list {
     background: rgba(0, 0, 0, 0.18);
+  }
+  /* The review adds a lot; scroll the panel rather than squash the moves. */
+  .analysis-panel {
+    overflow-y: auto;
+  }
+  .analysis-panel .tree {
+    flex: 1 0 140px;
   }
 }
 
@@ -986,4 +996,182 @@ button {
 
 .game-header a {
   color: #8fbcdb;
+}
+
+/* ---------- Game Review ---------- */
+
+.review-panel {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-panel p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.review-title {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.progress {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.eval-graph {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.review-table th {
+  font-weight: 600;
+  color: var(--text-muted);
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-table td {
+  padding: 2px 4px;
+}
+
+.review-table td:not(:first-child),
+.review-table th:not(:first-child) {
+  text-align: center;
+  width: 30%;
+  font-weight: 700;
+}
+
+.review-table td:first-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.accuracy-row td {
+  padding-bottom: 6px;
+}
+
+.accuracy {
+  display: inline-block;
+  min-width: 52px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.accuracy.white {
+  background: #fff;
+  color: #262421;
+}
+
+.accuracy.black {
+  background: #403d39;
+  color: #fff;
+  border: 1px solid #5c5a57;
+}
+
+.cls-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.cls-glyph.large {
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+}
+
+.move-feedback {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 6px;
+  background: var(--panel-2);
+  border-radius: var(--radius);
+}
+
+.link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.tree-glyph {
+  font-weight: 800;
+  margin-left: 1px;
+}
+
+.retry-feedback {
+  min-height: 1.4em;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.retry-feedback.right {
+  color: var(--accent);
+}
+
+.retry-feedback.wrong {
+  color: #ff8a80;
+}
+
+.retry-feedback.checking,
+.retry-feedback.shown {
+  color: var(--text-muted);
+}
+
+.retry-score {
+  font-size: 16px;
+  font-weight: 600;
 }

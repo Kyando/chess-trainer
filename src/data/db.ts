@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+import type { PositionEval } from '../review/review'
 
 export type GameSource = 'chesscom' | 'bot'
 export type Outcome = 'win' | 'loss' | 'draw'
@@ -56,10 +57,21 @@ export interface ArchiveState {
   fetchedAt: number
 }
 
+/** Cached engine verdicts for a game's main line (Game Review). */
+export interface StoredReview {
+  /** Start FEN + main-line moves, see `reviewKey`. */
+  key: string
+  /** Engine node budget used per position. */
+  nodes: number
+  evals: PositionEval[]
+  createdAt: number
+}
+
 export class ChessDb extends Dexie {
   games!: EntityTable<GameRecord, 'id'>
   pgns!: EntityTable<GamePgn, 'id'>
   archives!: EntityTable<ArchiveState, 'key'>
+  reviews!: EntityTable<StoredReview, 'key'>
 
   constructor(name = 'chess-trainer') {
     super(name)
@@ -68,6 +80,7 @@ export class ChessDb extends Dexie {
       pgns: 'id',
       archives: 'key, username',
     })
+    this.version(2).stores({ reviews: 'key' })
   }
 }
 

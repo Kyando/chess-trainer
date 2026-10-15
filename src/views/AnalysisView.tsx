@@ -7,11 +7,16 @@ import type { Color, PromotionPiece } from '../core/types'
 import { toWhiteEval, type WhiteEval } from '../engine/eval'
 import { StockfishEngine } from '../engine/stockfish'
 import { uciToIntent, type EngineLine } from '../engine/uci'
-import { Board, type Arrow } from '../ui/Board'
+import { CLASS_INFO, type MoveClass } from '../review/review'
+import { useGameReview } from '../review/useGameReview'
+import { useRetry } from '../review/useRetry'
+import { Board, type Arrow, type Badge } from '../ui/Board'
 import { EngineLines } from '../ui/EngineLines'
 import { EvalBar } from '../ui/EvalBar'
 import { ImportDialog } from '../ui/ImportDialog'
 import { PromotionDialog } from '../ui/PromotionDialog'
+import { RetryPanel } from '../ui/RetryPanel'
+import { ReviewPanel } from '../ui/ReviewPanel'
 import { playSound, soundForMove } from '../ui/sounds'
 import { TreeView } from '../ui/TreeView'
 
@@ -47,7 +52,7 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
   const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [openingsReady, setOpeningsReady] = useState(false)
-  const [, bump] = useReducer((x: number) => x + 1, 0)
+  const [version, bump] = useReducer((x: number) => x + 1, 0)
   const [boardSync, resyncBoard] = useReducer((x: number) => x + 1, 0)
   const engineRef = useRef<StockfishEngine | null>(null)
 
@@ -64,14 +69,20 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
     void loadOpenings().then(() => setOpeningsReady(true))
   }, [])
 
+  const gameReview = useGameReview(tree, version)
+  const { review, nodeIds } = gameReview
+  const retry = useRetry(review, gameReview.fens, gameReview.judgeMove)
+  const drill = retry.drill
+
   const node = tree.get(currentId)
-  const fen = node.fen
+  // While retrying, the board shows the drill's position instead of the tree.
+  const fen = drill && drill.status !== 'finished' ? drill.fen : node.fen
   const chess = useMemo(() => new Chess(fen), [fen])
   const turn = chess.turn()
   const gameOver = chess.isGameOver()
 
   // Engine: (re)start analysis whenever the position changes.
-  const analysing = active && engineOn && !gameOver
+  const analysing = active && engineOn && !gameOver && !retry.active && gameReview.status !== 'running'
   useEffect(() => {
     if (!analysing) return
     engineRef.current ??= new StockfishEngine()
@@ -97,9 +108,27 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
     return map
   }, [chess])
 
-  const arrows: Arrow[] = analysing && lines[0]?.pv[0]
-    ? [{ from: lines[0].pv[0].slice(0, 2), to: lines[0].pv[0].slice(2, 4), brush: 'paleBlue' }]
-    : []
+  // Game Review: where the current node sits on the main line, and its verdict.
+  const mainIndex = tree.isMainline(currentId) ? node.ply - tree.root.ply : null
+  const reviewed = review && mainIndex ? review.moves[mainIndex - 1] : undefined
+  const positionId = (i: number) => (i === 0 ? tree.rootId : nodeIds[i - 1])
+  const classes = useMemo(() => {
+    void version
+    return review ? new Map<string, MoveClass>(review.moves.map((m, i) => [nodeIds[i], m.cls])) : undefined
+  }, [review, nodeIds, version])
+
+  let arrows: Arrow[] = []
+  let badges: Badge[] = []
+  if (drill) {
+    if (retry.hintSquare) arrows = [{ from: retry.hintSquare, brush: 'green' }]
+  } else {
+    if (reviewed) badges = [{ square: reviewed.uci.slice(2, 4), glyph: CLASS_INFO[reviewed.cls].glyph, color: CLASS_INFO[reviewed.cls].color }]
+    if (reviewed?.bestUci && reviewed.loss >= 5) {
+      arrows = [{ from: reviewed.bestUci.slice(0, 2), to: reviewed.bestUci.slice(2, 4), brush: 'green' }]
+    } else if (analysing && lines[0]?.pv[0]) {
+      arrows = [{ from: lines[0].pv[0].slice(0, 2), to: lines[0].pv[0].slice(2, 4), brush: 'paleBlue' }]
+    }
+  }
 
   const opening = openingsReady ? openingFor(tree.path(currentId).map((n) => n.fen)) : null
 
@@ -118,19 +147,27 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
   )
 
   const onBoardMove = (from: string, to: string) => {
+    if (drill) {
+      // Promotions in a drill always pick a queen.
+      void retry.play(from + to)
+      return
+    }
     const isPromotion = chess.moves({ square: from as never, verbose: true }).some((m) => m.to === to && m.isPromotion())
     if (isPromotion) setPendingPromotion({ from, to })
     else play(from, to)
   }
 
-  const playLine = (ucis: string[]) => {
-    let id = currentId
+  /** Adds a line after `fromId` and selects its last move (or `selectFirst`: its first). */
+  const playLine = (ucis: string[], fromId = currentId, selectFirst = false) => {
+    let id = fromId
+    let first: string | null = null
     for (const uci of ucis) {
       const next = tree.addMove(id, uciToIntent(uci))
       if (!next) break
       id = next.id
+      first ??= id
     }
-    setCurrentId(id)
+    setCurrentId(selectFirst && first ? first : id)
     bump()
   }
 
@@ -142,7 +179,7 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
   useEffect(() => {
     if (!active) return
     const onKey = (e: KeyboardEvent) => {
-      if (showImport || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return
+      if (showImport || drill || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return
       if (e.key === 'ArrowLeft') goParent()
       else if (e.key === 'ArrowRight') goChild()
       else if (e.key === 'ArrowUp' || e.key === 'Home') goStart()
@@ -153,7 +190,7 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [active, showImport, goParent, goChild, goStart, goEnd])
+  }, [active, showImport, drill, goParent, goChild, goStart, goEnd])
 
   const toggleEngine = () => {
     const next = !engineOn
@@ -185,17 +222,18 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
     <main className="layout">
       <section className="board-column">
         <div className="board-with-eval">
-          <EvalBar evaluation={evaluation} label={evalLabel} orientation={orientation === 'w' ? 'white' : 'black'} />
+          <EvalBar evaluation={drill ? null : evaluation} label={drill ? undefined : evalLabel} orientation={orientation === 'w' ? 'white' : 'black'} />
           <div className="board-frame">
             <Board
               fen={fen}
               orientation={orientation === 'w' ? 'white' : 'black'}
               turnColor={turn === 'w' ? 'white' : 'black'}
-              movableColor="both"
+              movableColor={drill ? (drill.status === 'try' ? (orientation === 'w' ? 'white' : 'black') : undefined) : 'both'}
               dests={dests}
-              lastMove={node.move ? [node.move.from, node.move.to] : undefined}
+              lastMove={drill ? drill.lastMove : node.move ? [node.move.from, node.move.to] : undefined}
               check={chess.inCheck()}
               arrows={arrows}
+              badges={badges}
               onMove={onBoardMove}
               syncKey={boardSync}
             />
@@ -203,6 +241,23 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
         </div>
       </section>
 
+      {drill ? (
+        <aside className="side-panel analysis-panel">
+          <RetryPanel
+            status={drill.status}
+            message={drill.message}
+            item={retry.item}
+            at={drill.at}
+            total={drill.items.length}
+            clean={drill.clean}
+            hint={drill.hint}
+            onHint={retry.showHint}
+            onSolution={retry.showSolution}
+            onNext={retry.next}
+            onExit={retry.exit}
+          />
+        </aside>
+      ) : (
       <aside className="side-panel analysis-panel">
         <EngineLines
           fen={fen}
@@ -211,6 +266,21 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
           onToggle={toggleEngine}
           onPlayLine={playLine}
           status={gameOver ? (chess.isCheckmate() ? 'checkmate' : 'draw') : undefined}
+        />
+        <ReviewPanel
+          status={gameReview.status}
+          progress={gameReview.progress}
+          error={gameReview.error}
+          review={review}
+          moveCount={nodeIds.length}
+          names={{ w: h.White ?? 'White', b: h.Black ?? 'Black' }}
+          current={mainIndex}
+          userColor={orientation}
+          onStart={() => void gameReview.start()}
+          onCancel={gameReview.cancel}
+          onSelect={(i) => setCurrentId(positionId(i))}
+          onPlayLine={(i, ucis) => playLine(ucis, positionId(i), true)}
+          onRetry={() => retry.begin(orientation)}
         />
         {(h.White || h.Black) && (
           <div className="game-header">
@@ -234,7 +304,7 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
           </div>
         )}
         <div className="opening-name">{opening ? `${opening.eco} · ${opening.name}` : ' '}</div>
-        <TreeView tree={tree} currentId={currentId} onSelect={setCurrentId} />
+        <TreeView tree={tree} currentId={currentId} onSelect={setCurrentId} classes={classes} />
         {isVariation && (
           <div className="action-row">
             <button className="btn secondary small-text" onClick={() => (tree.promote(currentId), bump())}>
@@ -286,6 +356,7 @@ export function AnalysisView({ initialTree, initialOrientation = 'w', active }: 
           {copied ?? ''}
         </div>
       </aside>
+      )}
 
       {showImport && (
         <ImportDialog

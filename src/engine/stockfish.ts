@@ -3,6 +3,8 @@ import { parseInfo, type EngineLine } from './uci'
 export interface SearchOptions {
   depth?: number
   movetime?: number
+  /** Node budget: same work on every position, whatever the device speed. */
+  nodes?: number
   multipv?: number
 }
 
@@ -89,8 +91,9 @@ export class StockfishEngine {
       const limits = [
         opts.depth ? `depth ${opts.depth}` : '',
         opts.movetime ? `movetime ${opts.movetime}` : '',
-      ].join(' ')
-      this.send(`go ${limits.trim() || 'depth 12'}`)
+        opts.nodes ? `nodes ${opts.nodes}` : '',
+      ].filter(Boolean).join(' ')
+      this.send(`go ${limits || 'depth 12'}`)
       const best = await done
       return {
         bestmove: best.split(' ')[1],
